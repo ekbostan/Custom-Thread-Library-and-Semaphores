@@ -1,4 +1,3 @@
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,14 +30,14 @@ queue_t queue_create(void)
 
 int queue_destroy(queue_t queue)
 {
-	if(queue == NULL || queue->queue_size != 0){
-	free(queue);
-	queue= NULL;
-	return 0;
-	}
-	else{
-	return -1;
-	}
+	if (queue == NULL || queue->queue_first !=NULL || queue->queue_size != 0) {
+       		 return -1;
+    }
+
+    free(queue);
+    queue = NULL;
+
+    return 0;
 }
 
 int queue_enqueue(queue_t queue, void *data)
@@ -81,7 +80,7 @@ int queue_dequeue(queue_t queue, void **data)
         return -1;
         }
 	else{
-	 *data = queue->queue_first->node_value
+	 *data = queue->queue_first->node_value;
                 if(queue->queue_first != queue->queue_last){
                 queue->queue_first = queue->queue_first->next;
                 }
@@ -106,37 +105,44 @@ int queue_delete(queue_t queue, void *data)
         if(queue == NULL){
         return -1;
         }
-	if(queue->queue_first == quueu->queue_last){
+	if(queue->queue_first == queue->queue_last){
 		return -1;
 	}
-	else{
 	
 	struct node*  Queue_node_current = queue->queue_first;
-	struct node*  Queue_node_previous;
-	
-		if(Queue_node_current->node_value == data){
-			free(Queue_node_previous);
-			queue->queue_first = queue->queue_first->next;
+	if(Queue_node_current ->node_value !=data){
+		while(Queue_node_current){
+			if(Queue_node_current->next->node_value !=data){
+				if(Queue_node_current->next->next == NULL)
+					break;
+				else
+					Queue_node_current =Queue_node_current->next;
+			}
+			else{
+			Queue_node_current->next = Queue_node_current->next->next;
+			Queue_node_current = NULL;
+			queue->queue_size--;
 			free(Queue_node_current);
-			queue->queue_lengtj--;
 			return 0;
+			}	
 		}
-		else{
-		while(Queue_node_current->next !=NULL){
-		Queue_node_previous = Queue_node_current;
-		Queue_node_current = Queue_node_current->next;
-		if(Queue_node_current->node_value != data){
-			if(Queue_node_current->next ==NULL)
-
-		}
-		
-
-
+	
+	
+	
+	}
+	else{
+	queue->queue_first = queue->queue_first->next;
+	queue->queue_size--;
+	free(Queue_node_current);
+	return 0;
+	}
+	Queue_node_current = NULL;
+	free(Queue_node_current);
+	return -1;
 }
-
 int queue_iterate(queue_t queue, queue_func_t func)
 {
-	 if(queue->queue_size == 0){
+	if(queue->queue_size == 0){
         return -1;
         }
         if(func == NULL){
@@ -145,21 +151,23 @@ int queue_iterate(queue_t queue, queue_func_t func)
         if(queue == NULL){
         return -1;
         }
-        if(queue->queue_first == quueu->queue_last){
+        if(queue->queue_first == queue->queue_last){
                 return -1;
         }
-
-
-
-
-
-
-
-
-
-
+	struct node*  Queue_node_current = queue->queue_first;
+	while(Queue_node_current != NULL)
+	{
+			
+			(*func)(queue,Queue_node_current->node_value);
+			Queue_node_current = Queue_node_current->next;
+		
+		}
+	return 0;
+	
+	
 	
 }
+	
 
 int queue_length(queue_t queue)
 {
@@ -168,5 +176,3 @@ int queue_length(queue_t queue)
 	else
 		return -1;
 }
-
-
