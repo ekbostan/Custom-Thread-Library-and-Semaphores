@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <netinet/in.h>
+#include <setjmp.h>
 
 #include "private.h"
 #include "uthread.h"
@@ -15,11 +17,10 @@
 #include "preempt.c"
 
 // state definitions:
-#define INIT 0
-#define RUNNING 1
-#define READY 2
-#define WAITING 3
-#define FINISHED 4
+#define RUNNING 0
+#define READY 1
+#define BLOCKED 2
+#define TERMINATED 3
 
 struct uthread_tcb
 {
@@ -36,46 +37,83 @@ struct uthread_tcb
 };
 
 struct uthread_tcb *runningBlock;
-unsigned short TID;
+int TID;
 
 queue_t queue;
 // int queueSize = queue_length(queue);
-static ucontext_t context[5];
-
-int getRunningBlock(queue_t library, void *data)
-{
-    struct uthread_tcb *current = (struct uthread_tcb *)data;
-
-    if (current->state == RUNNING)
-    {
-        runningBlock = current;
-        return 1;
-    }
-    return 0;
-}
 
 struct uthread_tcb *uthread_current(void)
 {
+    struct uthread_tcb *front = queue->queue_first->node_value;
+    runningBlock = front;
 
-    queue_func_t function = &getRunningBlock;
-
-    int iterate = queue_iterate(queue, function);
-    if (iterate == 0)
+    if (front->state == RUNNING)
     {
-        printf("Current thread success: TID= %lu\n", runningBlock->TID);
-        return runningBlock;
+        runningBlock = front;
     }
     else
     {
-        printf("Current thread not found; error in queue iterate\n");
-        return NULL;
+        front->state = RUNNING;
     }
+    // finds first element in queue and returns it
+    // check if first element of queue is set to running, if not set it to running
+    return runningBlock;
 
     /* TODO Phase 2/3 */
 }
 void uthread_exit(void)
 {
     /* TODO Phase 2 */
+    // get current running thread from front of queue
+    struct uthread_tcb *current = uthread_current();
+    // destroy the stack and context
+    uthread_ctx_destroy_stack(current->context);
+    free(current->stack);
+    // set current state to terminated
+    current->state = TERMINATED;
+
+    // yield to the next thread in the queue
+    uthread_yield();
+}
+void uthread_yield(void)
+{
+    // save current context of running thread from uthread_current function
+
+    struct uthread_tcb *current = uthread_current();
+    // get the next value in the queue and save that context
+    struct uthread_tcb *next;
+    // switch state to ready of current running thread
+    if (current->state == RUNNING)
+    {
+        current->state = READY;
+    }
+
+    // dequeue front of queue and enqueue it to end of queue
+    if (queue_dequeue(queue, (void **)&current) == -1)
+    {
+        printf("Error in dequeueing first queue element in yield function\n");
+    }
+    queue_enqueue(queue, current);
+
+    // set current running thread to next block in the queue-> state to running
+    next = uthread_current();
+    printf("next->TID: %d", next->TID);
+    printf("next->state: %d", next->state);
+    if (next->state == READY)
+    {
+        next->state = RUNNING;
+    }
+
+    uthread_ctx_switch(current->context, next->context);
+    if (current->state == TERMINATED)
+    {
+        queue_delete(queue, current);
+        uthread_ctx_destroy_stack(current->stack);
+        free(current);
+        current = NULL;
+    }
+
+    // do a context switch between next in line and block dequeued to end of the line
 }
 
 int uthread_create(uthread_func_t func, void *arg)
@@ -118,7 +156,7 @@ int uthread_run(bool preempt, uthread_func_t func, void *arg)
         struct uthread_tcb *mainThread = (struct uthread_tcb *)malloc(sizeof(struct uthread_tcb));
 
         mainThread->TID = TID;
-        mainThread->state = READY;
+        mainThread->state = RUNNING;
         mainThread->context = malloc(sizeof(uthread_ctx_t));
         void *stack1 = uthread_ctx_alloc_stack();
         // initialize context for main thread with null function and argument
@@ -134,32 +172,24 @@ int uthread_run(bool preempt, uthread_func_t func, void *arg)
             printf("Main thread context initialization unsuccessful");
             return -1;
         }
+    }
+    else
+    {
+        if (uthread_create(func, arg) == -1)
+        {
+            printf("Failed to create new thread in run function\n");
+        }
         else
         {
-            // initial thread creation after confirming main thread is created successfully
-            struct uthread_tcb *initialThread = (struct uthread_tcb *)malloc(sizeof(struct uthread_tcb));
-            initialThread->TID = TID++;
-            initialThread->context = malloc(sizeof(uthread_ctx_t));
-            void *stack2 = uthread_ctx_alloc_stack();
-            int create2 = uthread_ctx_init(initialThread->context, stack2, func, arg);
-
-            initialThread->stack = stack2;
-            initialThread->startFunc = func;
-            initialThread->argument = arg;
-            initialThread->joiner = NULL;
-
-            if (create2 != 0)
-            {
-                printf("Initial thread creation unsuccessful");
-                return -1;
-            }
-            else
-            {
-                uthread_ctx_switch(mainThread->context, initialThread->context);
-                runningBlock = initialThread;
-            }
+            printf("New thread creation in run function successful\n");
         }
     }
+
+    while (&queue_length != 0)
+    {
+        uthread_yield();
+    }
+
     return 0;
     // creating initial thread
 
