@@ -38,7 +38,8 @@ void preempt_enable(void)
 
 void preempt_start(bool preempt)
 {
-	
+	if(preempt){preempt=false;}
+	/*
 	if(preempt){
 	struct sigaction sa;
 	struct itimerval timer;
@@ -48,20 +49,16 @@ void preempt_start(bool preempt)
 
 	timer.it_value.tv_sec = 0;
 	timer.it_value.tv_usec = HZ;
- 	/* ... and every 250 msec after that. */
+ 	 ... and every 250 msec after that. 
  	timer.it_interval.tv_sec = 0;
  	timer.it_interval.tv_usec = HZ;
 	setitimer (ITIMER_VIRTUAL, &timer, NULL);
 	timer_handler(SIGVTALRM);
-	}
+	}*/
 }
 
 void preempt_stop(void)
+{
 	struct itimerval timer;
-	setitimer(0);
-}
-
-void timer_handler(){
-
-uthread_yield();
+	setitimer(ITIMER_VIRTUAL,0,&timer);
 }
