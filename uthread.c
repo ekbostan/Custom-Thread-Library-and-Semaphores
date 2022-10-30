@@ -73,11 +73,8 @@ void uthread_exit(void)
     uthread_ctx_destroy_stack(current->context);
     free(current->stack);
     // set current state to terminated
-    current->state = TERMINATED; 
-    queue_delete(queue, current);
-    uthread_ctx_destroy_stack(current->stack);
-    free(current);
-    current=NULL;
+    current->state = TERMINATED;
+  
     // yield to the next thread in the queue
     uthread_yield();
 }
@@ -100,7 +97,7 @@ void uthread_yield(void)
         printf("Error in dequeueing first queue element in yield function\n");
     }
     queue_enqueue(queue, current);
-
+	
     // set current running thread to next block in the queue-> state to running
    
    
@@ -110,8 +107,14 @@ void uthread_yield(void)
     }
 
     uthread_ctx_switch(current->context, next->context);
-  
-
+  	if(next->state == TERMINATED){
+	queue_dequeue(queue,next);
+	queue_delete(queue,next);
+	uthread_ctx_destroy_stack(next->stack);
+	free(next);
+	next=NULL;
+	}
+	
     // do a context switch between next in line and block dequeued to end of the line
 }
 
