@@ -6,8 +6,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <stdbool.h>
-#include <netinet/in.h>
-#include <setjmp.h>
+
 
 #include "private.h"
 #include "uthread.h"
@@ -25,7 +24,7 @@
 struct uthread_tcb
 {
     uthread_ctx_t *context;     // pointer to context- top of stack
-    unsigned short TID;         // thread ID
+    int TID;                    // thread ID
     void *stack;                // checks to see if a stack exists for thread
     void (*startFunc)(void *);  // function of the thread
     void *argument;             // argument of the passed function
@@ -185,7 +184,7 @@ int uthread_run(bool preempt, uthread_func_t func, void *arg)
         }
     }
 
-    while (&queue_length != 0)
+    while (&queue_length != 1)
     {
         uthread_yield();
     }
@@ -204,16 +203,4 @@ void uthread_block(void)
 void uthread_unblock(struct uthread_tcb *uthread)
 {
     /* TODO Phase 3 */
-}
-
-void printHello()
-{
-    printf("Hello!");
-}
-
-int main(void)
-{
-    queue_iterate(queue, printHello);
-
-    return 0;
 }
