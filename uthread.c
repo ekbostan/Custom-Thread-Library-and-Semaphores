@@ -21,10 +21,14 @@
 #define BLOCKED 2
 #define TERMINATED 3
 
+static int bool_start = 0;
+static int bool_preempt = 0;
+static int currNodeCount = 0;
+
 struct uthread_tcb
 {
     uthread_ctx_t *context;     // pointer to context- top of stack
-    int TID;                    // thread ID
+    unsigned short TID;         // thread ID
     void *stack;                // checks to see if a stack exists for thread
     void (*startFunc)(void *);  // function of the thread
     void *argument;             // argument of the passed function
@@ -44,7 +48,7 @@ queue_t queue;
 struct uthread_tcb *uthread_current(void)
 {
     struct uthread_tcb *front = queue->queue_first->node_value;
-    runningBlock = front;
+   
 
     if (front->state == RUNNING)
     {
@@ -53,6 +57,7 @@ struct uthread_tcb *uthread_current(void)
     else
     {
         front->state = RUNNING;
+	runningBlock = front;
     }
     // finds first element in queue and returns it
     // check if first element of queue is set to running, if not set it to running
@@ -77,10 +82,10 @@ void uthread_exit(void)
 void uthread_yield(void)
 {
     // save current context of running thread from uthread_current function
-
+    
     struct uthread_tcb *current = uthread_current();
     // get the next value in the queue and save that context
-    struct uthread_tcb *next;
+    struct uthread_tcb *next = queue->queue_first->next->node_value;
     // switch state to ready of current running thread
     if (current->state == RUNNING)
     {
@@ -95,7 +100,7 @@ void uthread_yield(void)
     queue_enqueue(queue, current);
 
     // set current running thread to next block in the queue-> state to running
-    next = uthread_current();
+   
     printf("next->TID: %d", next->TID);
     printf("next->state: %d", next->state);
     if (next->state == READY)
@@ -118,7 +123,7 @@ void uthread_yield(void)
 int uthread_create(uthread_func_t func, void *arg)
 {
     /* TODO Phase 2 */
-
+   
     struct uthread_tcb *block = (struct uthread_tcb *)malloc(sizeof(struct uthread_tcb));
     void *stack = uthread_ctx_alloc_stack();
 
@@ -130,6 +135,7 @@ int uthread_create(uthread_func_t func, void *arg)
     if (create == 0)
     {
         queue_enqueue(queue, block);
+	currNodeCount++;
         block->TID = TID++;
         block->state = READY;
         block->startFunc = func;
@@ -148,7 +154,7 @@ int uthread_create(uthread_func_t func, void *arg)
 int uthread_run(bool preempt, uthread_func_t func, void *arg)
 {
     /* TODO Phase 2 */
-
+    if((preempt != 0 && preempt !=1) || bool_start){return -1;}
     // create an empty idle thread and swap the context with the thread to run
     if (queue == NULL)
     {
@@ -166,6 +172,7 @@ int uthread_run(bool preempt, uthread_func_t func, void *arg)
         mainThread->joiner = NULL;
         queue = queue_create();
         queue_enqueue(queue, mainThread);
+	currNodeCount++;
         if (create1 != 0)
         {
             printf("Main thread context initialization unsuccessful");
@@ -184,7 +191,7 @@ int uthread_run(bool preempt, uthread_func_t func, void *arg)
         }
     }
 
-    while (&queue_length != 1)
+    while (queue->queue_size != 1)
     {
         uthread_yield();
     }
@@ -198,9 +205,11 @@ int uthread_run(bool preempt, uthread_func_t func, void *arg)
 void uthread_block(void)
 {
     /* TODO Phase 3 */
+	printf("block function");
 }
 
 void uthread_unblock(struct uthread_tcb *uthread)
 {
     /* TODO Phase 3 */
+	printf("unblock: %p", uthread);
 }
