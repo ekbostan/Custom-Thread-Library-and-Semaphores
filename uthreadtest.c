@@ -51,8 +51,7 @@ struct uthread_tcb *uthread_current(void)
 
     // finds first element in queue and returns it
     // check if first element of queue is set to running, if not set it to running
-    return runningBlock;
-
+    return front;
     /* TODO Phase 2/3 */
 }
 void uthread_exit(void)
@@ -81,12 +80,7 @@ void uthread_yield(void)
     {
         current->state = READY;
     }
-    if(current->state == TERMINATED){
-	    queue_delete(queue, current);
-	    uthread_ctx_destroy_stack(current->stack);
-	    current = NULL;
-	    free(current);
-    }
+   
 
     // dequeue front of queue and enqueue it to end of queue
     if (queue_dequeue(queue, (void **)&current) == -1)
@@ -104,7 +98,12 @@ void uthread_yield(void)
     }
 
     uthread_ctx_switch(current->context, next->context);
-   	
+   if(current->state == TERMINATED){
+   queue_delete(queue, current);
+   uthread_ctx_detroy_stack(current->stack);
+   free(current);
+   current=NULL;
+   }   
     // do a context switch between next in line and block dequeued to end of the line
 }
 
