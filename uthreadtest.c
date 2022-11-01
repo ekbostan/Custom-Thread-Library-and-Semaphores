@@ -33,26 +33,25 @@ struct uthread_tcb
     void *argument;             // argument of the passed function
     int state;                  // defined state
     int ret;                    // return value
-    struct uthread_tcb *joiner; // joiner thread- idk wtf this means though
+    
 
     /* TODO Phase 2 */
 };
 
-struct uthread_tcb *runningBlock;
 int TID;
 
-queue_t queue;
+static queue_t runningQueue;
+static queue_t readyQueue;
+static queue_t terminatedQueue;
 // int queueSize = queue_length(queue);
 
 struct uthread_tcb *uthread_current(void)
 {
-    struct uthread_tcb  *front = queue->queue_first->node_value;
+    struct uthread_tcb  *front = runningQueue->queue_first->node_value;
     if(front == NULL){return NULL;}
 
     printf("front node value in current: %p\n", front);
-    if(front->state == RUNNING){
-runningBlock = front;
-    }
+  
 
 
     // finds first element in queue and returns it
@@ -63,13 +62,19 @@ runningBlock = front;
 void uthread_exit(void)
 {
     /* TODO Phase 2 */
-    // get current running thread from front of queue
+    // get current running thread from front of running queue
     struct uthread_tcb *current = uthread_current();
-    // destroy the stack and context
-    uthread_ctx_destroy_stack(current->context);
-    free(current->stack);
+    struct uthread_tcb *next = readyQueue->queue_first->node_value;
+    struct uthread_tcb *readyDequeue;
+    struct uthread_tcb *runningDequeue;
+
+    queue_dequeue(readyQueue,(void**)&readyDequeue);
+   queue_dequeue(runningQueue, (void**)&runningDequeue); 
+    next->state = RUNNING;
+    queue_enqueue(runningQueue, next);
     // set current state to terminated
     current->state = TERMINATED;
+    queue_enqueue(terminatedQueue, current);
 
   
     // yield to the next thread in the queue
@@ -81,51 +86,26 @@ void uthread_yield(void)
     // save current context of running thread from uthread_current function
     
     struct uthread_tcb *current = uthread_current();
-    struct node *nextNode = queue->queue_first->next;
     printf("current node: %p\n", current);
     struct uthread_tcb *next;
      printf("node next created in yield\n");
-    if(queue_dequeue(queue,(void**)&current)==-1){return;}
-    next = nextNode->node_value;
+    if(queue_dequeue(readyQueue,(void**)&next)==-1){return;}
+    printf("ready queue element dequeued in yield\n");
+
     if(current == NULL){return;}
 
+    current->state = READY;
+    queue_enqueue(readyQueue, current);
+    printf("queued current queue into ready queue in yield\n");
+    struct uthread_tcb *runningDequeue;
+    queue_dequeue(runningQueue, (void**)&runningDequeue);
+    printf("dequeued from running queue in yield\n");
 
-
-    if(current->state == TERMINATED){
-	    queue_delete(queue, current);
-	    uthread_ctx_destroy_stack(current->stack);
-	    free(current);
-	  }
-    // get the next value in the queue and save that context
-    printf("current thread: %p\n", current);
-
-
-    if(next == NULL){
-	    uthread_exit();
-    }
-    printf("next thread in yield: %p\n", nextNode);
-
-
-    // switch state to ready of current running thread
-    if (current->state == RUNNING)
-    {
-        current->state = READY;
-    }
-   
-
-    // dequeue front of queue and enqueue it to end of queue
-
-    queue_enqueue(queue, current);
-    printf("enqueueed front thread\n");
-	
-    // set current running thread to next block in the queue-> state to running
-   
-   
-    if (next->state == READY)
-    {
-        next->state = RUNNING;
-    }
+    next->state = RUNNING;
+    queue_enqueue(runningQueue, next);
+    printf("enqueued next node into running queue in yield\n");
   
+    // get the next value in the queue and save that context
 
 
     uthread_ctx_switch(current->context, next->context);
@@ -148,12 +128,12 @@ int uthread_create(uthread_func_t func, void *arg)
     
     if (create == 0)
     {
-        queue_enqueue(queue, block);
+        queue_enqueue(readyQueue, block);
         block->TID = TID++;
         block->state = READY;
         block->startFunc = func;
         block->argument = arg;
-        block->joiner = NULL;
+     
         printf("Thread creation successful\n");
         return 0; // returns 0 if thread is created successfully
     }
@@ -168,9 +148,13 @@ int uthread_create(uthread_func_t func, void *arg)
 int uthread_run(bool preempt, uthread_func_t func, void *arg)
 {
 	if(preempt == 0){printf("false preempt\n");}
+	//initialize queues: 
+	runningQueue = queue_create();
+	readyQueue = queue_create();
+	terminatedQueue = queue_create();
 	printf("entering run function\n");
-    printf("queue_first in initial run: %p\n", queue);
-    if (queue == NULL)
+    printf("queue_first in initial run: %p\n", runningQueue->queue_first);
+    if (runningQueue->queue_first == NULL)
     {
         struct uthread_tcb *mainThread = (struct uthread_tcb *)malloc(sizeof(struct uthread_tcb));
 
@@ -183,9 +167,8 @@ int uthread_run(bool preempt, uthread_func_t func, void *arg)
         mainThread->stack = stack1;
         mainThread->startFunc = NULL;
         mainThread->argument = NULL;
-        mainThread->joiner = NULL;
-        queue = queue_create();
-        queue_enqueue(queue, mainThread);
+
+        queue_enqueue(runningQueue, mainThread);
 
         if (create1 != 0)
         {
@@ -206,9 +189,11 @@ int uthread_run(bool preempt, uthread_func_t func, void *arg)
             printf("New thread creation in run function successful\n");
         }
    
-
-        uthread_yield();	
- 
+     while(readyQueue != 0){
+			
+        uthread_yield();
+	
+     }
     }
     return 0;
     // creating initial thread
