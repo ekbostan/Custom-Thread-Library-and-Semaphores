@@ -163,7 +163,7 @@ int uthread_create(uthread_func_t func, void *arg)
 
 int uthread_run(bool preempt, uthread_func_t func, void *arg)
 {
-	if(preempt == 0){}
+	if(preempt == 0){preempt=1;}
 	//initialize queues: 
 	
 	readyQueue = queue_create();
