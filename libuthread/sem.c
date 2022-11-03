@@ -58,13 +58,13 @@ int sem_up(sem_t sem)
 	if(sem == NULL){
         return -1;
         }
-	sem->internal_count++;
+	
 	if(sem->internal_count >0){
 	struct uthread_tcb *upBlock;
 	queue_dequeue(sem->sem_queue,(void**)&upBlock);
 	uthread_unblock(upBlock);
 	
 	}
-
+	sem->internal_count++;
 	return 0;
 }
