@@ -33,7 +33,8 @@ struct uthread_tcb
     void (*startFunc)(void *);  // function of the thread
     void *argument;             // argument of the passed function
     int state;                  // defined state
-    int ret;                    // return value
+	int ret; //return value 
+   
     
 
     
