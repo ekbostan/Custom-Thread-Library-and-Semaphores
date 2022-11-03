@@ -162,9 +162,7 @@ int queue_iterate(queue_t queue, queue_func_t func)
 			Queue_node_current = Queue_node_current->next;
 		
 		}
-	return 0;
-	
-	
+	return 0;	
 	
 }
 	
