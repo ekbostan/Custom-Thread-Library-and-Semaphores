@@ -44,13 +44,14 @@ int sem_down(sem_t sem)
 	if(sem == NULL){
 		return -1;
 	}
+	sem->internal_count--;
 	if(sem ->internal_count == 0){
 		struct uthread_tcb* block = uthread_current();
 		queue_enqueue(sem->sem_queue, block);
 		uthread_block();
 	}
 	
-	sem->internal_count--;
+	
 	
 	return 0;
 }
