@@ -3,9 +3,9 @@ objs := queue.o uthread.o sem.o
 CC := gcc
 CFLAGS := -Wall -Wextra -Werror -MMD
 
-/*ifneq ($(V),1)
+ifneq ($(V),1)
 Q = @
-endif*/
+endif
 
 all: $(lib)
 
