@@ -41,7 +41,7 @@ int sem_destroy(sem_t sem)
 
 int sem_down(sem_t sem)
 {
-	if(sem == NULL || !sem->sem_queue){
+	if(sem == NULL){
 	return -1;
 	}
 	while(sem ->internal_count == 0){
@@ -55,7 +55,7 @@ int sem_down(sem_t sem)
 
 int sem_up(sem_t sem)
 {
-	if(sem == NULL || !sem->sem_queue){
+	if(sem == NULL){
         return -1;
         }
 	sem->internal_count++;
