@@ -28,12 +28,9 @@
 struct uthread_tcb
 {
     uthread_ctx_t *context;     // pointer to context- top of stack
-   int  TID;         // thread ID
-    void *stack;                // checks to see if a stack exists for thread
-    void (*startFunc)(void *);  // function of the thread
-    void *argument;             // argument of the passed function
+    int  TID;         		// thread ID
     int state;                  // defined state
-	int ret; //return value 
+
    
     
 
@@ -104,15 +101,14 @@ int uthread_create(uthread_func_t func, void *arg)
     struct uthread_tcb *block = (struct uthread_tcb *)malloc(sizeof(struct uthread_tcb));
     void *stack = uthread_ctx_alloc_stack();
     block->context = malloc(sizeof(uthread_ctx_t));
-    block->stack = stack;
+
     int create = uthread_ctx_init(block->context, stack, func, arg);
     if (create == 0)
     {
         queue_enqueue(readyQueue, block);
         block->TID = TID++;
         block->state = READY;
-        block->startFunc = func;
-        block->argument = arg;
+      
      
         return 0; // returns 0 if thread is created successfully
     }
