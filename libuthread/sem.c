@@ -49,9 +49,9 @@ int sem_down(sem_t sem)
 		queue_enqueue(sem->sem_queue, block);
 		uthread_block();
 	}
-	else{
-		sem->internal_count--;
-	}
+	
+	sem->internal_count--;
+	
 	return 0;
 }
 
