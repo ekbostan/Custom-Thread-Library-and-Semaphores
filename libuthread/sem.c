@@ -16,12 +16,12 @@ sem_t sem_create(size_t count)
 {
 	sem_t sem_lock = (sem_t)malloc(sizeof(struct semaphore));
 	if(sem_lock == NULL){
-	return NULL;
+		return NULL;
 	}
 	else{
-	sem_lock->internal_count = count;
-	sem_lock->sem_queue = queue_create();
-	return sem_lock;
+		sem_lock->internal_count = count;
+		sem_lock->sem_queue = queue_create();
+		return sem_lock;
 	}
 }
 
