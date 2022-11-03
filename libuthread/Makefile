@@ -1,6 +1,5 @@
 lib := libuthread.a
-objs := queue.o uthread.o  
-
+objs := queue.o uthread.o 
 CC := gcc
 CFLAGS := -Wall -Wextra -Werror -MMD
 
@@ -24,4 +23,3 @@ $(lib): $(objs)
 clean:
 	@echo "CLEAN"
 	$(Q)rm -f $(lib) $(objs) $(deps) *.d
-
