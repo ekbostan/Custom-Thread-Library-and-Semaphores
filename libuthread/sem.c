@@ -42,27 +42,29 @@ int sem_destroy(sem_t sem)
 int sem_down(sem_t sem)
 {
 	if(sem == NULL){
-	return -1;
+		return -1;
 	}
-	while(sem ->internal_count == 0){
-	struct uthread_tcb* block = uthread_current();
-	queue_enqueue(sem->sem_queue, block);
-	uthread_block();
+	if(sem ->internal_count == 0){
+		struct uthread_tcb* block = uthread_current();
+		queue_enqueue(sem->sem_queue, block);
+		uthread_block();
 	}
-	sem->internal_count--;
+	else{
+		sem->internal_count--;
+	}
 	return 0;
-	}
+}
 
 int sem_up(sem_t sem)
 {
 	if(sem == NULL){
-        return -1;
+        	return -1;
         }
 	sem->internal_count++;
 	if(sem->internal_count > 0){
-	struct uthread_tcb *upBlock;
-	queue_dequeue(sem->sem_queue,(void**)&upBlock);
-	uthread_unblock(upBlock);
+		struct uthread_tcb *upBlock;
+		queue_dequeue(sem->sem_queue,(void**)&upBlock);
+		uthread_unblock(upBlock);
 	
 	}
 	
