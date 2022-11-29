@@ -77,6 +77,11 @@ void uthread_exit(void)
     // yield to the next thread in the queue
     uthread_yield();
 }
+//This function gets the currently active thread by calling uthread_current() 
+//and gets the first thread in the ready queue by calling queue_dequeue() on the ready queue. 
+//It sets the currently active thread's state to ready and the dequeued thread's state to run. 
+//Lastly it sets the currently active thread to the ready dequeued thread and performs a context switch on the two threads by calling uthread_ctx_switch(current->context, next->context). 
+//The context switch runs the switched thread's function and calls uthread_exit().
 void uthread_yield(void)
 {
     // save current context of running thread from uthread_current function
@@ -120,6 +125,14 @@ int uthread_create(uthread_func_t func, void *arg)
    
 }
 
+//This function first initializes the two globally set queues, readyQueue and terminatedQueue, by calling queue_create(). 
+//Then it checks if the ready queue is empty; if so, it creates the main idle thread by allocating memory, allocating a context, 
+//setting the TID to 0 and setting its state to running. 
+//Then the initial thread is created by calling uthread_create() with the function and argument passed in. 
+//Then a while loop is entered by checking if the readyQueue is not empty. In the while loop, uthread_yield() is called. 
+//The while loop exits when the ready queue only has one thread in it and that thread is the main thread.
+//Lastly, the terminated queue is dequeued one by one in a loop and the terminated queue's nodes are deleted using the following functions: 
+//queue_delete(), uthread_ctx_destroy_stack(), and free().
 
 int uthread_run(bool preempt, uthread_func_t func, void *arg)
 {
