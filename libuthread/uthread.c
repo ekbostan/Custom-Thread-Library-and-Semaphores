@@ -62,6 +62,10 @@ struct uthread_tcb *uthread_current(void)
     return currentThread;
     
 }
+//This function gets the currently active thread by calling uthread_current() 
+//and gets the first thread in the ready queue by calling queue_dequeue() on the ready queue. 
+//It sets the currently active thread's state to terminated and the dequeued thread's state to run. 
+//It enqueues the thread held in the current block to the terminated queue and sets the currently active thread global variable to the thread dequeued from the ready queue.
 void uthread_exit(void)
 {
     
