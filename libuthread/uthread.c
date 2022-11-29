@@ -23,7 +23,7 @@
 #define BLOCKED 2
 #define TERMINATED 3
 
-//Concurrency is the composition ofindependently executing tasks
+//Concurrency is the composition of independently executing tasks
 //Single execution sequence that represents a separately schedulable task
 
 struct uthread_tcb
